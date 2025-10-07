@@ -29,43 +29,71 @@
   </div>
 
   <script>
-    const REFRESH_MS = 5000;
-    let liveCount = 0, targetCount = 0, tps = 1;
-    let lastTick = performance.now();
+  const REFRESH_MS = 5000;
 
-    function setHeartbeatSpeed(nextTps) {
-      const dur = (1 / Math.max(0.2, Number(nextTps) || 1)).toFixed(3);
-      document.documentElement.style.setProperty('--hb-duration', `${dur}s`);
-      document.getElementById("tpsValue").textContent = nextTps;
+  let liveCount = 0;
+  let targetCount = 0;
+  let tps = 1;
+  let lastTick = performance.now();
+  let initialized = false; // <-- snap-to-total on first successful load
+
+  function setHeartbeatSpeed(nextTps) {
+    const clamped = Math.max(0.2, Number(nextTps) || 1);
+    const dur = (1 / clamped).toFixed(3);
+    document.documentElement.style.setProperty('--hb-duration', `${dur}s`);
+    document.getElementById("tpsValue").textContent = clamped;
+  }
+
+  function animate(now) {
+    const dt = (now - lastTick) / 1000;
+    lastTick = now;
+
+    const step = tps * dt; // grow toward target at current TPS
+    if (liveCount < targetCount) {
+      liveCount = Math.min(targetCount, liveCount + step);
     }
+    document.getElementById("txCount").textContent =
+      Math.floor(liveCount).toLocaleString();
 
-    function animate(now) {
-      const dt = (now - lastTick) / 1000;
-      lastTick = now;
-      const step = tps * dt;
-      if (liveCount < targetCount) liveCount = Math.min(targetCount, liveCount + step);
-      document.getElementById("txCount").textContent = Math.floor(liveCount).toLocaleString();
-      requestAnimationFrame(animate);
-    }
-
-    async function loadTxCount() {
-      try {
-        const res = await fetch("txCount.json", { cache: "no-store" });
-        const j = await res.json();
-        const total = Number(j.total ?? j.count ?? 0);
-        targetCount = Math.max(targetCount, total);
-        tps = Number(j.tps ?? 1);
-        setHeartbeatSpeed(tps);
-        document.getElementById("status").textContent = j.status ?? "Running";
-        document.getElementById("lastUpdate").textContent = new Date(j.updatedAt ?? Date.now()).toLocaleTimeString();
-      } catch (e) {
-        console.warn(e);
-      }
-    }
-
-    loadTxCount();
-    setInterval(loadTxCount, REFRESH_MS);
     requestAnimationFrame(animate);
+  }
+
+  async function loadTxCount() {
+    try {
+      const res = await fetch("txCount.json", { cache: "no-store" });
+      const j = await res.json();
+
+      const total = Number(j.total ?? j.count ?? 0);
+      const nextTps = Number(j.tps ?? 1);
+      const status = j.status ?? "Running";
+      const updatedAt = j.updatedAt ?? Date.now();
+
+      if (!initialized) {
+        // Snap display to the true total on first load
+        targetCount = total;
+        liveCount = total;
+        initialized = true;
+      } else {
+        // Only move forward (never go backwards)
+        targetCount = Math.max(targetCount, total);
+      }
+
+      tps = nextTps > 0 ? nextTps : 1;
+      setHeartbeatSpeed(tps);
+
+      document.getElementById("status").textContent = status;
+      document.getElementById("lastUpdate").textContent =
+        new Date(updatedAt).toLocaleTimeString();
+    } catch (e) {
+      console.warn("loadTxCount failed:", e);
+    }
+  }
+
+  // Kick things off
+  loadTxCount();
+  setInterval(loadTxCount, REFRESH_MS);
+  requestAnimationFrame(animate);
+
   </script>
 </body>
 </html>
