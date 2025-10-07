@@ -1,0 +1,48 @@
+ :root {
+  --bg: #0b1220;
+  --text: #f2f5f9;
+  --accent: #16a34a;
+  --hb-duration: 1s;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: system-ui, sans-serif;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+}
+
+.wrap { text-align: center; }
+
+.counter {
+  font-size: clamp(48px, 12vw, 120px);
+  font-weight: 900;
+}
+
+.dot {
+  width: 14px; height: 14px; border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 0 rgba(22,163,74,0.6);
+  animation: pulse var(--hb-duration) infinite;
+  display: inline-block;
+  margin-right: 10px;
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(22,163,74,0.6);}
+  70% { transform: scale(1.2); box-shadow: 0 0 0 20px rgba(22,163,74,0);}
+  100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(22,163,74,0);}
+}
+
+.badge {
+  background: rgba(22,163,74,.15);
+  color: #b7f7c9;
+  border: 1px solid rgba(22,163,74,.35);
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-weight: 700;
+}
