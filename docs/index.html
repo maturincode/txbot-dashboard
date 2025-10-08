@@ -60,7 +60,7 @@
 
   async function loadTxCount() {
     try {
-      const res = await fetch("txCount.json", { cache: "no-store" });
+      const res = await fetch(`txCount.json?x=${Date.now()}`, { cache: "no-store" });
       const j = await res.json();
 
       const total = Number(j.total ?? j.count ?? 0);
